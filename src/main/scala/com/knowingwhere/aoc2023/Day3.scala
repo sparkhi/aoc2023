@@ -2,18 +2,31 @@ package com.knowingwhere.aoc2023
 
 import com.knowingwhere.aoc2023.util.Position
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 import scala.io.Source
 
 object Day3 extends App {
   val lines = Source.fromResource("day3-input.txt").getLines().toList
   val symbolPositions = getSymbolPositions(lines)
-
   val symbolCoverage = getPositionCoverage(symbolPositions)
   val numbersInGrid = getNumbersInGridWithPositions(lines)
 
   val partNumbers = numbersInGrid.filter(_.coverage.intersect(symbolCoverage.toList).nonEmpty)
   println(partNumbers.map(_.theValue).sum)
+
+  //Part 2 - find gear ratios which are based on numbers that are only around a '*'
+  val starPositions = getSymbolPositions2(lines, '*')
+  val starSymbolCoverage = starPositions.map(eachPos => getCoverageArea(eachPos))
+
+  val starCoverage: List[List[NumberInGrid]] = starSymbolCoverage.map(eachStar => findNumberAroundStar(eachStar))
+  val gearRatios = starCoverage.filter(_.size == 2)
+
+  val sum = gearRatios.map(pair => pair.head.theValue * pair.tail.head.theValue).sum
+  println(sum)
+
+  def findNumberAroundStar(eachStar: SymbolCoverage): List[NumberInGrid] = {
+    numbersInGrid.filter(_.coverage.intersect(eachStar.coverage).nonEmpty)
+  }
 
   private def isSymbol(eachChar: Char):Boolean = {
      !eachChar.equals('.') && !eachChar.isDigit
@@ -26,14 +39,26 @@ object Day3 extends App {
     positions.toList
   }
 
+  private def getPositions2(eachLineWithIndex: (String, Int), symbol: Char): List[Position] = {
+    val positions = for (characterIndex <- eachLineWithIndex._1.zipWithIndex
+                         if characterIndex._1 == symbol
+                         ) yield Position(eachLineWithIndex._2, characterIndex._2)
+    positions.toList
+  }
+
   def getSymbolPositions(lines: List[String]):List[Position] = {
     lines.zipWithIndex.flatMap(eachLineWithIndex => getPositions(eachLineWithIndex))
   }
 
-  private def getCoverageArea(eachPos: Position): List[Position] = {
-    List(Position(eachPos.x - 1, eachPos.y - 1), Position(eachPos.x - 1, eachPos.y), Position(eachPos.x - 1, eachPos.y + 1),
+  def getSymbolPositions2(lines: List[String], symbol: Char): List[Position] = {
+    lines.zipWithIndex.flatMap(eachLineWithIndex => getPositions2(eachLineWithIndex, symbol))
+  }
+
+  private def getCoverageArea(eachPos: Position): SymbolCoverage = {
+    val coverage = List(Position(eachPos.x - 1, eachPos.y - 1), Position(eachPos.x - 1, eachPos.y), Position(eachPos.x - 1, eachPos.y + 1),
       Position(eachPos.x, eachPos.y - 1), Position(eachPos.x, eachPos.y), Position(eachPos.x, eachPos.y + 1),
       Position(eachPos.x + 1, eachPos.y - 1), Position(eachPos.x + 1, eachPos.y), Position(eachPos.x + 1, eachPos.y + 1))
+    SymbolCoverage(eachPos, coverage)
   }
 
   /**
@@ -44,7 +69,7 @@ object Day3 extends App {
    * @return List of Positions as coverage of the list of positions passed in
    */
   def getPositionCoverage(positions: List[Position]):Set[Position] = {
-    positions.flatMap(getCoverageArea).toSet
+    positions.flatMap(getCoverageArea(_).coverage).toSet
   }
 
   def getNumbersInGridWithPositions(lines: List[String]):List[NumberInGrid] = {
@@ -92,3 +117,5 @@ object Day3 extends App {
  *  A numberInGrid will be: (35, [(2,2),(2,3)]
  */
 case class NumberInGrid(theValue: Int, coverage: List[Position])
+
+case class SymbolCoverage(location: Position, coverage: List[Position])
