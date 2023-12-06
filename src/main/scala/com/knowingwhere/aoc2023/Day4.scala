@@ -26,11 +26,14 @@ object Day4 extends App{
 }
 
 case class Scratchcard (Id: Int, winningNumbers: List[Int], chosenNumbers: List[Int]) {
+  def matchingNumberCount: Int = {
+    winningNumbers.intersect(chosenNumbers).size
+  }
+
   def score: Int = {
-    val commonNumbers = winningNumbers.intersect(chosenNumbers).size
-    if (commonNumbers == 0)
+    if (matchingNumberCount == 0)
       0
     else
-      Math.pow(2, commonNumbers - 1).toInt
+      Math.pow(2, matchingNumberCount - 1).toInt
   }
 }
