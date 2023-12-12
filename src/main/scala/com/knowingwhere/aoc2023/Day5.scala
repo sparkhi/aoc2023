@@ -74,8 +74,6 @@ object Day5 extends App {
     val elements = eachEntry.split(" ").map(_.trim.toLong).toList
     MappingEntry(elements.head, elements.tail.head, elements.tail.tail.head)
   }
-
-
 }
 
 case class AlmanacMapping(name: String, mappings: List[MappingEntry]) {
