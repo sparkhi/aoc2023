@@ -1,6 +1,6 @@
 package com.knowingwhere.aoc2023
 
-import com.knowingwhere.aoc2023.util.LinesSplitter
+import com.knowingwhere.aoc2023.util.{LinesSplitter, MathsUtil}
 
 import scala.annotation.tailrec
 import scala.io.Source
@@ -12,9 +12,35 @@ object Day8 extends App {
   val cycleString = groups.head.head
   val navigationMap = groups.tail.head.map(eachLine => getMapEntry(eachLine)).toMap
 
-  val stepCount = countSteps("AAA", navigationMap, cycleString, 0)
+  //part 1
+  val stepCount = countSteps("AAA", navigationMap, cycleString, equalsPredicate, 0)
+  println(stepCount)
+
+  //part 2 - multiple paths. get all the paths then figure out where the cycles meet
+  val startPositions = navigationMap.keys.filter(_.endsWith("A")).toList
+  val steps= startPositions.map(startKey => countSteps(startKey, navigationMap, cycleString, endsWithPredicate, 0))
+
+  // the different cycles will meet at the LCM of all cycle counts
+    val lcm = findLcm(steps, BigInt(1))
+  println(lcm)
+
   @tailrec
-  def countSteps(currentKey: String, navigationMap: Map[String, (String, String)], currentCycle: String, stepsTraversed: Int):Int = {
+  def findLcm(steps: List[BigInt], accLCM: BigInt): BigInt = {
+    if (steps.isEmpty)
+      accLCM
+    else {
+      val stepLCM = MathsUtil.lcm(steps.head, accLCM)
+      findLcm(steps.tail, stepLCM)
+    }
+
+  }
+
+
+  def equalsPredicate: String => Boolean = param => param == "ZZZ"
+  def endsWithPredicate: String => Boolean = param => param.endsWith("Z")
+
+  @tailrec
+  def countSteps(currentKey: String, navigationMap: Map[String, (String, String)], currentCycle: String, somePred: String => Boolean,  stepsTraversed: BigInt):BigInt = {
     val totalSteps = stepsTraversed + 1
     val currentDirection = currentCycle.head
     val nextKey = currentDirection match {
@@ -22,11 +48,11 @@ object Day8 extends App {
       case 'R' => navigationMap(currentKey)._2
 
     }
-    if (nextKey == "ZZZ") {
+    if (somePred(nextKey)) {
       totalSteps
     } else {
       val newCycle = currentCycle.tail + currentCycle.head
-      countSteps(nextKey, navigationMap, newCycle, totalSteps)
+      countSteps(nextKey, navigationMap, newCycle, somePred, totalSteps)
     }
   }
 
@@ -37,5 +63,4 @@ object Day8 extends App {
     mapKey -> mapVal
   }
 
-  println(stepCount)
 }
