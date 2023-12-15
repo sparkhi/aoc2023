@@ -4,12 +4,12 @@ import scala.annotation.tailrec
 import scala.io.Source
 
 object Day9 extends App {
-  val lines = Source.fromResource("day9-input.txt").getLines().toList.map(eachline => getIntList(eachline))
-  val lastNums = lines.map(findNextNumberOfSequence)
+  val sequences = Source.fromResource("day9-input.txt").getLines().toList.map(eachline => getIntList(eachline))
 
-  println(lastNums.sum)
+  //part 1
+  println(sequences.map(findNextNumberOfSequence).sum)
 
-  def getIntList(eachline: String) = {
+  private def getIntList(eachline: String) = {
     eachline.trim.split(" ").filter(_.nonEmpty).map(_.toInt).toList
   }
 
