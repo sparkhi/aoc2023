@@ -9,6 +9,11 @@ object Day9 extends App {
   //part 1
   println(sequences.map(findNextNumberOfSequence).sum)
 
+
+  //part2 - just reverse the sequences and find "next number"
+  val reversed = sequences.map(_.reverse)
+  println(reversed.map(findNextNumberOfSequence).sum)
+
   private def getIntList(eachline: String) = {
     eachline.trim.split(" ").filter(_.nonEmpty).map(_.toInt).toList
   }
