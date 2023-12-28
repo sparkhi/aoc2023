@@ -38,8 +38,6 @@ class Day11Test extends WordSpec with BeforeAndAfterEach{
                         |#...#.....""".stripMargin
 
       val compactUniverse = galaxyMap.split("\n").toList
-
-      //val universe = Day11.expand(compactUniverse)
       val galaxies = compactUniverse.zipWithIndex.flatMap(rowEntry => Day11.createGalaxyLocationsOfRow(rowEntry._2, rowEntry._1))
       val rowsToExpand: List[Int] = compactUniverse.zipWithIndex.filter(!_._1.contains('#')).map(_._2)
       val colsToExpand: List[Int] = compactUniverse.transpose.zipWithIndex.filter(!_._1.contains('#')).map(_._2)
