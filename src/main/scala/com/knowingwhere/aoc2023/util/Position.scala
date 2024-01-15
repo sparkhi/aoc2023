@@ -6,3 +6,5 @@ package com.knowingwhere.aoc2023.util
  * @param y y coordinate of the point represented by this object
  */
 case class Position(x: Int, y: Int)
+
+case class BigPosition(x: BigInt, y: BigInt)

@@ -1,6 +1,6 @@
 package com.knowingwhere.aoc2023
 
-import com.knowingwhere.aoc2023.util.Position
+import com.knowingwhere.aoc2023.util.{BigPosition, Position, StringUtil}
 
 import scala.annotation.tailrec
 import scala.io.Source
@@ -17,12 +17,72 @@ object Day18 extends App {
   val maxX = positionLoop.map(_.x).max
 
   //Uncomment following lines to see visualization
-//  val visuals = List.range(minY, maxY + 1).map(constructVisualization(_, minX, maxX, positionLoop)).toList
-//  visuals.map(_.pipe(println))
+  //val visuals = List.range(minY, maxY + 1).map(constructVisualization(_, minX, maxX, positionLoop)).toList
+  //visuals.map(_.pipe(println))
 
-  //Part 1
+  //Part 1 Good algorithm for "point in polygon", but not efficient to find area of a 2D shape
+  // After implementing Part 2, this implementation of part 1 is very inefficient, however leaving this in here for reference
   val insideCounts = List.range(minY, maxY + 1).map(findInsideCount(_, minX, maxX, positionLoop, RayCastingPosition.SWEEPING, isInside = false, runningCountOfInside = 0))
   println(insideCounts.sum + positionLoop.toSet.size) //position loop contains start and end element as same hence converting to set
+
+
+  //part 2
+  // It was quite clear that the part 1 algorithm won't work efficiently for part 2. Going back to the GIS and studying area of 2D shape based on
+  // vector cross product, it appears to be the best way to solve part 2. After studying the vectors and cross product concept, the practically
+  // helpful page ended up being this one ==> https://www.101computing.net/the-shoelace-algorithm/
+  // However, the above calculates the area but we need to include the trenches at the border too. This was quite difficult to figure out so
+  //
+  //   . . . .   Consider the simple picture on the left, we start at top left and move 3R, 2D, 3L and 2U. so the coordinates are
+  //   . . . .   (0,0), (3,0), (3,2), (0,2), (0,0) Area from shoelace = 6. However for our purpose, each point is 1 sqm and we actually need a count
+  //   . . . .   of all points. If we use pick's theorem for area => (count of internal points + 1/2 (count of points on boundary) - 1
+  //             From these two, we can get hold of the number of internal points. Adding the perimeter to it should give us a count of all points
+  //             which will be our answer.
+
+  val digPlan2 = Source.fromResource("day18-input.txt").getLines().map(createInstruction2).toList
+  val vertices = getVerticesOfPolygon(digPlan2, List(BigPosition(0,0)))
+  val coverage = calculateCoverage(vertices)
+
+  println(coverage)
+
+  def calculateCoverage(vertices: List[BigPosition]): BigInt = {
+    val perimeter = vertices.sliding(2).map(eachWindow => getStraightLineDistance(eachWindow)).sum
+    val area = vertices.sliding(2).map(eachWindow => calculateArea(eachWindow)).sum / 2
+    val internalPoints = area + 1 - (perimeter / 2)
+    perimeter + internalPoints
+  }
+
+  def getStraightLineDistance(eachWindow: List[BigPosition]) = {
+    val one = eachWindow.head
+    val two = eachWindow.tail.head
+    if (one.x == two.x) {
+      (one.y - two.y).abs
+    } else {
+      (one.x - two.x).abs
+    }
+  }
+
+  def calculateArea(eachWindow: List[BigPosition]): BigInt = {
+    val one = eachWindow.head
+    val two = eachWindow.tail.head
+    (one.x * two.y) - (one.y * two.x)
+  }
+
+
+  @tailrec
+  def getVerticesOfPolygon(digPlan2: List[BigInstruction], vertices: List[BigPosition]) : List[BigPosition] = {
+    digPlan2.length match {
+      case 0 => vertices
+      case _ =>
+        val currentPlan = digPlan2.head
+        val lastPoint = vertices.last
+        currentPlan.direction match {
+          case "R" => getVerticesOfPolygon(digPlan2.tail, vertices :+ BigPosition(lastPoint.x + currentPlan.steps, lastPoint.y))
+          case "L" => getVerticesOfPolygon(digPlan2.tail, vertices :+ BigPosition(lastPoint.x - currentPlan.steps, lastPoint.y))
+          case "U" => getVerticesOfPolygon(digPlan2.tail, vertices :+ BigPosition(lastPoint.x, lastPoint.y - currentPlan.steps))
+          case "D" => getVerticesOfPolygon(digPlan2.tail, vertices :+ BigPosition(lastPoint.x, lastPoint.y + currentPlan.steps))
+        }
+    }
+  }
 
   @tailrec
   def findInsideCount(rowNum: Int, currentX: Int, maxX: Int, positionLoop: List[Position], currentRay: RayCastingPosition.Value, isInside: Boolean, runningCountOfInside: Int): Int = {
@@ -119,7 +179,20 @@ object Day18 extends App {
 
   def createInstruction(instructionString: String) = {
     val instructions = instructionString.split(" ").toList
-    Instruction(instructions.head.trim, instructions.tail.head.trim.toInt, instructions.tail.tail.head.trim)
+    Instruction(instructions.head.trim, instructions.tail.head.trim.toInt)
+  }
+
+  def createInstruction2(instructionString: String) = {
+    val soCalledColourString = StringUtil.trimTrailing(instructionString.split(" \\(#").tail.head, ')')
+    val hexValue = BigInt(soCalledColourString.substring(0, soCalledColourString.length - 1), 16)
+    val directionValue = soCalledColourString.substring(soCalledColourString.length - 1)
+
+    directionValue match {
+      case "0" => BigInstruction("R", hexValue)
+      case "1" => BigInstruction("D", hexValue)
+      case "2" => BigInstruction("L", hexValue)
+      case "3" => BigInstruction("U", hexValue)
+    }
   }
 
 
@@ -179,7 +252,9 @@ object Day18 extends App {
     }
   }
 }
-case class Instruction(direction: String, steps: Int, colour: String)
+case class Instruction(direction: String, steps: Int)
+case class BigInstruction(direction: String, steps: BigInt)
+
 
 object RayCastingPosition extends Enumeration {
   val SWEEPING: RayCastingPosition.Value = Value(0)
