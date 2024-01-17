@@ -15,7 +15,7 @@ object Day19 extends App {
 
   def acceptPart(machinePart: MachinePart, workFlows: List[Workflow] ): Either[MachinePart, Boolean] = {
     val startingWorkFlow = workFlows.find(_.name == "in").head
-    if (runFlow(machinePart, startingWorkFlow, startingWorkFlow.steps, workFlows)) {
+    if (runFlow(machinePart, startingWorkFlow.steps, workFlows)) {
       Left(machinePart)
     } else {
       Right(false)
@@ -23,15 +23,14 @@ object Day19 extends App {
   }
 
   @tailrec
-  def runFlow(machinePart: MachinePart, currentFlow: Workflow, remainingSteps: List[Rule], workFlows: List[Workflow]) : Boolean = {
+  def runFlow(machinePart: MachinePart, remainingSteps: List[Rule], workFlows: List[Workflow]) : Boolean = {
     val currentRule = remainingSteps.head
     currentRule.getRuleName match {
       case "ACCEPT" => true
       case "REJECT" => false
       case "CONTINUE" =>
-        val nextWorkflow = workFlows.find(_.name == currentRule.getNextWorkflow).head
-        val newSteps = nextWorkflow.steps
-        runFlow(machinePart, nextWorkflow, newSteps, workFlows)
+        val newSteps = workFlows.find(_.name == currentRule.getNextWorkflow).head.steps
+        runFlow(machinePart, newSteps, workFlows)
       case "LESS_THAN" =>
         val isPass = currentRule.applyRule(machinePart)
         if (isPass) {
@@ -40,12 +39,11 @@ object Day19 extends App {
             case "A" => true
             case "R" => false
             case _ =>
-              val nextWorkflow = workFlows.find(_.name == nextWorkFlowName).head
-              val newSteps = nextWorkflow.steps
-              runFlow(machinePart, nextWorkflow, newSteps, workFlows)
+              val newSteps = workFlows.find(_.name == nextWorkFlowName).head.steps
+              runFlow(machinePart, newSteps, workFlows)
           }
         } else {
-          runFlow(machinePart, currentFlow, remainingSteps.tail, workFlows)
+          runFlow(machinePart, remainingSteps.tail, workFlows)
         }
       case "GREATER_THAN" =>
         val isPass = currentRule.applyRule(machinePart)
@@ -55,12 +53,11 @@ object Day19 extends App {
             case "A" => true
             case "R" => false
             case _ =>
-              val nextWorkflow = workFlows.find(_.name == nextWorkflowName).head
-              val newSteps = nextWorkflow.steps
-              runFlow(machinePart, nextWorkflow, newSteps, workFlows)
+              val newSteps = workFlows.find(_.name == nextWorkflowName).head.steps
+              runFlow(machinePart, newSteps, workFlows)
           }
         } else {
-          runFlow(machinePart, currentFlow, remainingSteps.tail, workFlows)
+          runFlow(machinePart, remainingSteps.tail, workFlows)
         }
     }
   }
