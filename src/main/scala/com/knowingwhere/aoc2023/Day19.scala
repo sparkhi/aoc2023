@@ -11,8 +11,10 @@ object Day19 extends App {
   val workFlows = textBlocks.head.map(createWorkflow)
   val machineParts = textBlocks.tail.head.map(createMachinePart)
 
+  //Part 1
   machineParts.map(part => acceptPart(part, workFlows)).filter(_.isLeft).map(_.left.get).map(_.getRating).sum.pipe(println)
 
+  //Part 2
   getPossibleCombinationsOfAcceptance(workFlows).pipe(println)
 
   /**
@@ -31,6 +33,7 @@ object Day19 extends App {
   }
 
   /**
+   * ************ PART 1 **************
    * Recursively run a machine part through the workflow steps.
     * @param machinePart the part under consideration
    * @param remainingSteps workflow steps to be carried out
@@ -77,7 +80,11 @@ object Day19 extends App {
     }
   }
 
-  // Part 2
+  /**
+   * Part 2, start with a list containing MachinePartRanges of 1 to 4000 for all categories
+   * @param workflows list of all workflows
+   * @return sum of all possible combinations
+   */
   def getPossibleCombinationsOfAcceptance(workflows: List[Workflow]): BigInt = {
     val startingList = List(MachinePartRanges(Map(
       "x" -> InclusiveRange(1, 4000),
@@ -89,6 +96,17 @@ object Day19 extends App {
     acceptedRanges.map(_.getPossibleCombinations).sum
   }
 
+  /**
+   * ************ PART 2 **************
+   * Process a range as per the rule and split it into 2 ranges, one that meets condition and other that does not meet
+   * the condition. Depending on the action needed, the split range is either accepted, rejected or added to the list of
+   * ranges for further processing recursively. If a range is accepted, it is added to the accumulation list of accepted
+   * ranges. Once all ranges are processed as per rules, we get a list of accepted ranges which are returned to the caller
+   * @param rangesToProcess Ranges to process in each iteration
+   * @param workFlows List of all workflows
+   * @param acceptedPartRanges Accumulation list of accepted ranges
+   * @return List of accepted ranges
+   */
   @tailrec
   def processRanges(rangesToProcess: List[(MachinePartRanges, List[Rule])], workFlows: List[Workflow], acceptedPartRanges: List[MachinePartRanges]): List[MachinePartRanges] = {
     rangesToProcess.length match {
@@ -154,6 +172,11 @@ object Day19 extends App {
     }
   }
 
+  /**
+   * Create a machine part from an input string
+   * @param machinePartString input string
+   * @return Machine Part object
+   */
   def createMachinePart(machinePartString: String) : MachinePart= {
     val partExpressions = StringUtil.trimTrailing(StringUtil.trimLeading(machinePartString, '{'), '}').split(",").toList
     MachinePart(partExpressions.map(eachExpr => getTuple(eachExpr)).toMap)
@@ -163,6 +186,11 @@ object Day19 extends App {
     expressionString.split("=").head -> expressionString.split("=").tail.head.toInt
   }
 
+  /**
+   * Workflow parsing to create a workflow.
+   * @param workflowString string representation of workflow from input
+   * @return Workflow
+   */
   def createWorkflow(workflowString: String) : Workflow = {
     val workflowName = workflowString.split("\\{").head
     val workflowStepsString = StringUtil.trimTrailing(workflowString.split("\\{").tail.head, '}')
@@ -170,6 +198,11 @@ object Day19 extends App {
     Workflow(workflowName, workflowSteps)
   }
 
+  /**
+   * Rule parsing to create a Rule object from the string
+   * @param stepString string representation of the rule in input
+   * @return Subclass of the Rule object
+   */
   def createRule(stepString: String) = {
     if (stepString.contains(":")) {
       val expressionParts = stepString.split(":").toList
@@ -215,13 +248,41 @@ case class MachinePartRanges(categories: Map[String, util.InclusiveRange]) {
   }
 }
 
+/**
+ * Represents a base class for a "Rule", A rule is any action taken on the machine part. As a result, every rule has
+ * following components
+ *    NextStep -> represents what needs to happen when the condition of the rule is met
+ *    Name -> Name of the rule, this is useful for pattern matching when processing rules
+ *
+ * @param nextStep next step for the flow
+ */
 abstract class Rule (nextStep: String) {
   def getRuleName: String
   def getNextWorkflow: String = { nextStep }
   def applyRule(part: MachinePart): Boolean = { throw new RuntimeException("You implement, you override")}
+
+  /**
+   * Return a MachinePartRanges object which contains the range that meets the criteria
+   * @param currentPartRange current ranges
+   * @return New MachinePartRanges which meets the condition
+   */
   def getSuccessRange(currentPartRange: MachinePartRanges): MachinePartRanges = { throw new RuntimeException("You implement, you override")}
+
+  /**
+   * Return a MachinePartRanges object which contains the range after removing the range which meets the criteria
+   * @param currentPartRange current ranges
+   * @return New MachinePartRanges which does not meet the condition
+   */
   def getFailureRange(currentPartRange: MachinePartRanges): MachinePartRanges = { throw new RuntimeException("You implement, you override")}
 
+  /**
+   * Generate a new MachinePArt with a specific range modified. Useful to split the ranges on condition
+   * @param part Existing part
+   * @param categoryToModify name of the category whose range needs to be changed
+   * @param min minimum value of new range
+   * @param max maximum value of new range
+   * @return New MachinePartRanges
+   */
   def getRangeModifiedPart(part: MachinePartRanges, categoryToModify: String, min: Int, max: Int): MachinePartRanges = {
     val newInclusiveRange = InclusiveRange(min, max)
     categoryToModify match {
@@ -254,6 +315,12 @@ abstract class Rule (nextStep: String) {
 
 }
 
+/**
+ *  A rule representing a condition of "greater than"
+ * @param category category on which the rule is applied
+ * @param compareVal comparison constant
+ * @param nextStep nextStep if the rule is met
+ */
 class GreaterThanRule (category: String, compareVal:Int, nextStep: String) extends Rule (nextStep) {
   override def applyRule(part: MachinePart): Boolean = {
     part.categories(category) > compareVal
@@ -273,6 +340,12 @@ class GreaterThanRule (category: String, compareVal:Int, nextStep: String) exten
 
 }
 
+/**
+ *  A rule representing a condition of "less than"
+ * @param category category on which the rule is applied
+ * @param compareVal comparison constant
+ * @param nextStep nextStep if the rule is met
+ */
 class LessThanRule (category: String, compareVal:Int, nextStep: String) extends Rule (nextStep) {
   override def applyRule(part: MachinePart): Boolean = {
     part.categories(category) < compareVal
@@ -292,6 +365,9 @@ class LessThanRule (category: String, compareVal:Int, nextStep: String) extends 
 
 }
 
+/**
+ * A rule representing acceptance. This rule simply means the machine part on which it operates is accepted
+ */
 class AcceptRule extends Rule ("ACCEPT") {
   override def applyRule(part: MachinePart): Boolean = {
     true
@@ -303,6 +379,9 @@ class AcceptRule extends Rule ("ACCEPT") {
 
 }
 
+/**
+ * A rule representing rejection. This rule simply means the machine part on which it operates is rejected
+ */
 class RejectRule extends Rule ("REJECT"){
   override def applyRule(part: MachinePart): Boolean = {
     false
@@ -312,6 +391,10 @@ class RejectRule extends Rule ("REJECT"){
   override def toString: String = " (REJECT) "
 }
 
+/**
+ * A rule representing continue, typically when the next step is a workflow to which processiinng needs to continue
+ * @param nextStep nextStep of the rule, when condition is met
+ */
 class continueNextRule (nextStep: String) extends Rule (nextStep) {
   override def applyRule(part: MachinePart): Boolean = {
     true
