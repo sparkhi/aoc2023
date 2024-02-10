@@ -9,7 +9,6 @@ object Day5 extends App {
   val stringGroups = new LinesSplitter().splitAtBlankLines(lines)
   val seeds = stringGroups.head.head.split(":").tail.head.trim.split(" ").map(_.toLong).toList
   val almanacMappings = createAlmanac(stringGroups)
-  println(seeds)
 
   val soils = seeds.map(findSoilFromSeed(almanacMappings, _))
   val fertilizer = soils.map(findFertilizerFromSoil(almanacMappings, _))
@@ -20,7 +19,6 @@ object Day5 extends App {
   val location = humidity.map(findLocationFromHumidity(almanacMappings, _))
 
   println(location.min)
-  println(location)
 
 
   def createAlmanac(stringGroups: List[List[String]]) = {
