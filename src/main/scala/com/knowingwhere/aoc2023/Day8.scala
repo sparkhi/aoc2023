@@ -18,7 +18,7 @@ object Day8 extends App {
 
   //part 2 - multiple paths. get all the paths then figure out where the cycles meet
   val startPositions = navigationMap.keys.filter(_.endsWith("A")).toList
-  val steps= startPositions.map(startKey => countSteps(startKey, navigationMap, cycleString, endsWithPredicate, 0))
+  val steps = startPositions.map(startKey => countSteps(startKey, navigationMap, cycleString, endsWithPredicate, 0))
 
   // the different cycles will meet at the LCM of all cycle counts
   val lcm = findLcm(steps, BigInt(1))
