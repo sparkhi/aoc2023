@@ -20,7 +20,6 @@ object Day5 extends App {
 
   println(location.min)
 
-
   def createAlmanac(stringGroups: List[List[String]]) = {
     stringGroups.tail.map(eachGroup => createMapping(eachGroup))
   }
@@ -81,11 +80,11 @@ case class AlmanacMapping(name: String, mappings: List[MappingEntry]) {
       sourceVal
     } else {
       val selectedMapping = possibleMappings.head
-      sourceVal + (selectedMapping.desinationVal - selectedMapping.sourceVal)
+      sourceVal + (selectedMapping.destinationVal - selectedMapping.sourceVal)
     }
   }
 }
 
-case class MappingEntry(desinationVal: Long, sourceVal: Long, range: Long) {
+case class MappingEntry(destinationVal: Long, sourceVal: Long, range: Long) {
   def getMaxSource: Long = sourceVal + range - 1
 }
